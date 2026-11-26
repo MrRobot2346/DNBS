@@ -1,0 +1,417 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Department Notice Board System — Interactive Prototype</title>
+  <meta name="description" content="A polished frontend prototype of a College Department Notice Board System demonstrating Student View, Administrator View, and Shared Demo State.">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+  <!-- ======================================================== -->
+  <!-- 1. PROTOTYPE PREVIEW SWITCHER BAR (Sticky at Top)        -->
+  <!-- ======================================================== -->
+  <aside class="prototype-switcher-bar" aria-label="Prototype Navigation Bar">
+    <div style="display:flex; align-items:center; flex-wrap:wrap; gap:8px;">
+      <span class="prototype-tag">Prototype Demo</span>
+      <span style="font-weight:600; color:#cbd5e1; font-size:0.8rem;">Role Switcher:</span>
+      <div class="prototype-role-controls">
+        <button id="pillStudent" class="role-pill-btn active" title="Switch to Student View">
+          <span>🎓</span> Student View
+        </button>
+        <button id="pillAdmin" class="role-pill-btn" title="Switch to Administrator View">
+          <span>🔐</span> Administrator View
+        </button>
+      </div>
+    </div>
+    <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
+      <span id="demoNoticeCount" class="prototype-tag" style="background:rgba(255,255,255,0.08); text-transform:none; font-weight:normal;">
+        Loading demo data...
+      </span>
+      <button id="btnHowItWorks" class="demo-action-btn" title="Explain how this demo works">
+        📘 How This Demo Works
+      </button>
+      <button id="btnResetDemoData" class="demo-action-btn" title="Reset all changes to default sample notices">
+        ↺ Reset Demo Data
+      </button>
+    </div>
+  </aside>
+
+  <!-- ======================================================== -->
+  <!-- 2. ADMINISTRATOR NOTIFICATION STRIP (Visible in Admin)   -->
+  <!-- ======================================================== -->
+  <div id="adminStatusStrip" class="admin-status-strip hidden" role="region" aria-label="Admin Status Banner">
+    <div style="display:flex; align-items:center; gap:8px;">
+      <span style="font-size:1.1rem;">⚠️</span>
+      <strong>Administrator Demonstration Mode:</strong>
+      <span>Changes you publish or delete are reflected across all student views in this browser session.</span>
+    </div>
+    <div class="admin-strip-actions">
+      <button class="btn btn-primary btn-sm" id="stripAddNoticeBtn">+ Add Notice</button>
+      <button class="btn btn-secondary btn-sm" id="stripOpenDbBtn">🗄️ Database Viewer</button>
+    </div>
+  </div>
+
+  <!-- ======================================================== -->
+  <!-- 3. ACADEMIC HEADER                                       -->
+  <!-- ======================================================== -->
+  <header class="academic-header">
+    <div class="header-top">
+      <div id="brandLogoLink" class="brand-wrapper" title="Return to Department Notice Board Home">
+        <div class="dept-monogram">CSE</div>
+        <div class="dept-titles">
+          <h1>Department of Computer Science & Engineering</h1>
+          <p>Official Academic & Department Notice Board Portal</p>
+        </div>
+      </div>
+      <div class="header-quick-actions">
+        <button id="discreetAdminLink" class="admin-discreet-link">
+          Admin Sign In
+        </button>
+      </div>
+    </div>
+
+    <!-- Category Nav Bar -->
+    <nav class="academic-nav-bar" aria-label="Category Navigation">
+      <ul id="navCategoryLinks" class="nav-links">
+        <!-- Rendered dynamically by app.js: Home + 5 Categories -->
+      </ul>
+    </nav>
+  </header>
+
+  <!-- ======================================================== -->
+  <!-- 4. DYNAMIC VIEW CONTAINER                                -->
+  <!-- ======================================================== -->
+  <main class="main-content" id="mainContentArea" role="main">
+    <!-- Rendered dynamically by app.js: Home, Category, Detail, Admin views -->
+  </main>
+
+  <!-- ======================================================== -->
+  <!-- 5. UNIVERSAL NOTICE MODAL (Add / Edit)                   -->
+  <!-- Spec Sections 10, 11, 12                                 -->
+  <!-- ======================================================== -->
+  <div id="universalNoticeModal" class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="noticeModalTitle">
+    <div class="modal-card">
+      <div class="modal-header">
+        <div class="modal-title-box">
+          <h3 id="noticeModalTitle">Create Notice</h3>
+          <p>
+            Category: <strong id="formCategoryDisplay" style="color:var(--primary-700);">General Announcements</strong> 
+            (Pre-determined by selected category)
+          </p>
+        </div>
+        <button id="noticeModalCloseX" class="modal-close-btn" aria-label="Close form">&times;</button>
+      </div>
+
+      <div class="modal-body">
+        <form id="noticeForm" novalidate>
+
+          <!-- Field 1: Title (Required) -->
+          <div class="form-group">
+            <label for="formTitle" class="form-label">
+              Notice Title <span class="required-star">*</span>
+            </label>
+            <input type="text" id="formTitle" class="form-input" placeholder="e.g., Mid-Term Examination Seating Matrix Release" required>
+            <div id="errFormTitle" class="form-error-msg"></div>
+          </div>
+
+          <!-- Field 2: Description (Required) -->
+          <div class="form-group">
+            <label for="formDescription" class="form-label">
+              Detailed Description <span class="required-star">*</span>
+            </label>
+            <textarea id="formDescription" class="form-textarea" rows="4" placeholder="Provide full announcement details, instructions, eligibility, and faculty contacts..." required></textarea>
+            <div id="errFormDescription" class="form-error-msg"></div>
+          </div>
+
+          <!-- Fields 3, 4, 5: Event Begins, Event Ends, Deadline -->
+          <div class="date-fields-grid">
+            <!-- Event Start -->
+            <div class="date-input-group">
+              <label for="formEventStart" class="form-label">Event Begins From</label>
+              <input type="date" id="formEventStart" class="form-input">
+              <button type="button" class="date-clear-btn" data-clear-target="formEventStart" title="Clear start date">✕</button>
+              <div class="form-help-text">Optional start date</div>
+            </div>
+
+            <!-- Event End -->
+            <div class="date-input-group">
+              <label for="formEventEnd" class="form-label">Event Ends On</label>
+              <input type="date" id="formEventEnd" class="form-input">
+              <button type="button" class="date-clear-btn" data-clear-target="formEventEnd" title="Clear end date">✕</button>
+              <div class="form-help-text">Optional end date</div>
+              <div id="errFormEventEnd" class="form-error-msg"></div>
+            </div>
+
+            <!-- Deadline -->
+            <div class="date-input-group">
+              <label for="formDeadline" class="form-label">Deadline</label>
+              <input type="date" id="formDeadline" class="form-input">
+              <button type="button" class="date-clear-btn" data-clear-target="formDeadline" title="Clear deadline">✕</button>
+              <div class="form-help-text">Drives priority sorting</div>
+            </div>
+          </div>
+
+          <!-- Field 6: Banner Image (Optional, Real Browser File Picker, 5MB max) -->
+          <div class="file-upload-block">
+            <div class="file-upload-header">
+              <div>
+                <label class="form-label" style="margin-bottom:0;">Banner Image (Optional)</label>
+                <div class="form-help-text">Displays across ~70% card height and notice header</div>
+              </div>
+              <span class="file-limit-badge">Max 5 MB • PNG, JPG, SVG</span>
+            </div>
+
+            <input type="file" id="bannerFileInput" accept="image/*" style="display:none;">
+            <button type="button" id="chooseBannerBtn" class="btn btn-secondary btn-sm">
+              📁 Choose Banner Image
+            </button>
+
+            <!-- Banner Preview Box -->
+            <div id="bannerPreviewArea"></div>
+          </div>
+
+          <!-- Field 7: Additional Images (Optional, up to 5, 5MB each) -->
+          <div class="file-upload-block">
+            <div class="file-upload-header">
+              <div>
+                <label class="form-label" style="margin-bottom:0;">Additional Images / Documents (Optional)</label>
+                <div class="form-help-text">Circulares, schedules, floorplans, or posters</div>
+              </div>
+              <span id="additionalImagesCountBadge" class="file-limit-badge">0/5 selected • Max 5 MB each</span>
+            </div>
+
+            <input type="file" id="additionalImagesFileInput" accept="image/*" multiple style="display:none;">
+            <button type="button" id="addAdditionalImagesBtn" class="btn btn-secondary btn-sm">
+              📁 Add Images (Max 5)
+            </button>
+
+            <!-- Additional Images Previews -->
+            <div id="additionalImagesGrid" class="gallery-previews-grid"></div>
+          </div>
+
+          <!-- Field 8: Video Selection (Optional, up to 3, 50MB each) -->
+          <div class="file-upload-block">
+            <div class="file-upload-header">
+              <div>
+                <label class="form-label" style="margin-bottom:0;">Video Demonstrations (Optional)</label>
+                <div class="form-help-text">Played on detail view via native HTML5 video player</div>
+              </div>
+              <span id="videoCountBadge" class="file-limit-badge">0/3 selected • Max 50 MB each</span>
+            </div>
+
+            <input type="file" id="videosFileInput" accept="video/mp4,video/webm" multiple style="display:none;">
+            <button type="button" id="addVideosBtn" class="btn btn-secondary btn-sm">
+              📁 Add Videos (Max 3)
+            </button>
+
+            <!-- Video Previews List -->
+            <div id="videoPreviewsList"></div>
+          </div>
+
+          <!-- Field 9: Bottom Action Buttons (Sticky at very bottom) -->
+          <div class="modal-footer" style="margin: 0 -24px -24px; padding: 16px 24px;">
+            <button type="button" id="noticeModalCancelBtn" class="btn btn-secondary">
+              Cancel
+            </button>
+            <button type="submit" id="noticeModalSubmitBtn" class="btn btn-primary">
+              Publish Notice
+            </button>
+          </div>
+
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- ======================================================== -->
+  <!-- 6. CONFIRM DISCARD CHANGES MODAL                         -->
+  <!-- ======================================================== -->
+  <div id="confirmDiscardModal" class="modal-overlay" role="dialog" aria-modal="true">
+    <div class="modal-card" style="max-width: 440px;">
+      <div class="modal-header">
+        <h3 style="font-size:1.15rem; color:#0f172a;">Unsaved Changes</h3>
+      </div>
+      <div class="modal-body" style="padding: 20px 24px;">
+        <p style="font-size:0.92rem; color:#475569; line-height:1.5;">
+          You have unsaved changes in the notice form. Discarding will leave the current demo state unchanged.
+        </p>
+      </div>
+      <div class="modal-footer">
+        <button id="confirmKeepEditingBtn" class="btn btn-secondary">Keep Editing</button>
+        <button id="confirmDiscardChangesBtn" class="btn btn-danger">Discard Changes</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ======================================================== -->
+  <!-- 7. WELCOME & ROLE SELECTION MODAL                        -->
+  <!-- First visit or demo introduction                         -->
+  <!-- ======================================================== -->
+  <div id="welcomeRoleModal" class="modal-overlay" role="dialog" aria-modal="true">
+    <div class="modal-card" style="max-width: 540px;">
+      <div class="modal-header" style="background:#0f172a; color:#fff;">
+        <div>
+          <span class="prototype-tag" style="background:rgba(255,255,255,0.2);">Department Portal Prototype</span>
+          <h3 style="color:#fff; margin-top:6px; font-size:1.25rem;">Select Demonstration View</h3>
+        </div>
+      </div>
+      <div class="modal-body" style="padding: 24px;">
+        <p style="font-size:0.9rem; color:#475569; margin-bottom:20px; line-height:1.6;">
+          Welcome to the <strong>Department Notice Board System</strong> prototype demonstration. Choose which perspective you want to explore first:
+        </p>
+
+        <div style="display:flex; flex-direction:column; gap:14px;">
+          <!-- Option 1: Student View -->
+          <div style="border:1px solid #cbd5e1; border-radius:12px; padding:16px; display:flex; align-items:center; justify-content:space-between; gap:14px; background:#f8fafc;">
+            <div>
+              <div style="font-weight:700; color:#0f172a; font-size:1rem; display:flex; align-items:center; gap:6px;">
+                🎓 Student View (Public Homepage)
+              </div>
+              <div style="font-size:0.82rem; color:#64748b; margin-top:2px;">
+                Explore announcements across the 5 categories with deadline-based sorting and search.
+              </div>
+            </div>
+            <button id="selectRoleStudentBtn" class="btn btn-primary btn-sm">
+              Enter as Student
+            </button>
+          </div>
+
+          <!-- Option 2: Admin View -->
+          <div style="border:1px solid #cbd5e1; border-radius:12px; padding:16px; display:flex; align-items:center; justify-content:space-between; gap:14px; background:#f8fafc;">
+            <div>
+              <div style="font-weight:700; color:#0f172a; font-size:1rem; display:flex; align-items:center; gap:6px;">
+                🔐 Administrator View
+              </div>
+              <div style="font-size:0.82rem; color:#64748b; margin-top:2px;">
+                Simulated admin dashboard, universal notice creator, and read-only Database Viewer.
+              </div>
+            </div>
+            <button id="selectRoleAdminBtn" class="btn btn-secondary btn-sm">
+              Enter as Admin
+            </button>
+          </div>
+        </div>
+
+        <div style="margin-top:20px; font-size:0.75rem; color:#94a3b8; text-align:center;">
+          You can toggle between roles at any time using the prototype switcher at the very top of the page.
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ======================================================== -->
+  <!-- 8. "HOW THIS DEMO WORKS" ARCHITECTURE MODAL (Section 21) -->
+  <!-- ======================================================== -->
+  <div id="architectureGuideModal" class="modal-overlay" role="dialog" aria-modal="true">
+    <div class="modal-card" style="max-width: 760px;">
+      <div class="modal-header">
+        <div class="modal-title-box">
+          <h3>How This Prototype Works — Architecture Roadmap</h3>
+          <p>Beginner-friendly explanation for student teammates and project reviewers</p>
+        </div>
+        <button id="closeArchGuideX" class="modal-close-btn">&times;</button>
+      </div>
+      <div class="modal-body">
+
+        <!-- Architecture Flow Diagrams -->
+        <h4 style="font-size:1rem; font-weight:700; color:#0f172a; margin-bottom:8px;">1. System Flow Comparison</h4>
+
+        <div style="margin-bottom:12px; font-size:0.85rem; font-weight:600; color:#2563eb;">Current Prototype (Demonstration Phase):</div>
+        <div class="architecture-diagram">
++-------------------------+         +----------------------------+         +-----------------------+
+|  Administrator View     |  &lt;---&gt;  |  Shared Frontend State     |  &lt;---&gt;  |  Student Public View  |
+|  (Forms, Edits, Deletes)|         |  (In-Memory / Local Demo)  |         |  (Filtered &amp; Sorted)  |
++-------------------------+         +----------------------------+         +-----------------------+
+        </div>
+
+        <div style="margin-bottom:12px; font-size:0.85rem; font-weight:600; color:#059669;">Final Application (Production Phase):</div>
+        <div class="architecture-diagram">
++-------------------------+         +--------------------+         +---------------------+         +----------------------+
+|  Administrator Client   |  ----&gt;  |  Flask Backend     |  ----&gt;  |  SQLite Database    |  ----&gt;  |  Student Client      |
+|  (Auth, Upload Forms)   |  POST   |  (API, Validation) |  INSERT |  (Persistent Tables)|  GET    |  (JSON Fetch &amp; UI)   |
++-------------------------+         +--------------------+         +---------------------+         +----------------------+
+                                              |
+                                              v
+                                    +--------------------+
+                                    | Local File Storage |
+                                    | (/uploads/media)   |
+                                    +--------------------+
+        </div>
+
+        <!-- The 8 Core Concepts from Spec Section 21 -->
+        <h4 style="font-size:1rem; font-weight:700; color:#0f172a; margin:20px 0 10px;">2. Core Concepts Explained</h4>
+
+        <div class="concept-box">
+          <h4>1. Frontend Only</h4>
+          <p>The visual pages, interactive forms, cards, search bars, and previews that users interact with in their web browser.</p>
+        </div>
+
+        <div class="concept-box">
+          <h4>2. Shared Demo State</h4>
+          <p>A single in-memory JavaScript data store (<code>NoticeStore</code>) that connects student and administrator views inside the same browser session so you can see live interactions without a backend.</p>
+        </div>
+
+        <div class="concept-box">
+          <h4>3. Universal Notice Form</h4>
+          <p>One reusable modal used across all five categories. When opened from a category page, the category is fixed so administrators can focus directly on content.</p>
+        </div>
+
+        <div class="concept-box">
+          <h4>4. Browser File Picker & Previews</h4>
+          <p>Opens your device's native file dialog and creates instant client-side preview URLs (<code>URL.createObjectURL</code>). Previews do not mean files are uploaded to an external server.</p>
+        </div>
+
+        <div class="concept-box">
+          <h4>5. Deadline-Based Sorting</h4>
+          <p>Dynamic sorting prioritizing notices with upcoming deadlines (closest deadline first), followed by notices without deadlines (newest first), and passed deadlines (newest first).</p>
+        </div>
+
+        <div class="concept-box">
+          <h4>6. Demo Database Viewer</h4>
+          <p>A read-only tabular representation simulating the future SQLite table schema (<code>id</code>, <code>title</code>, <code>category</code>, <code>deadline</code>, etc.) for teammates to preview data structures.</p>
+        </div>
+
+        <div class="concept-box">
+          <h4>7. Future Flask Backend</h4>
+          <p>The upcoming Python/Flask server will receive requests, enforce strict server-side validation, authenticate administrator passwords, and save uploaded files to disk.</p>
+        </div>
+
+        <div class="concept-box">
+          <h4>8. Real Synchronization</h4>
+          <p>In the final app, multiple distinct computers and student phones will see changes because they query the centralized SQLite database over HTTP endpoints.</p>
+        </div>
+
+      </div>
+      <div class="modal-footer">
+        <button id="closeArchGuideBtn" class="btn btn-primary">Understood, Close Guide</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ======================================================== -->
+  <!-- 9. TOAST CONTAINER FOR FEEDBACK                          -->
+  <!-- ======================================================== -->
+  <div id="toastContainer" class="toast-container" aria-live="polite"></div>
+
+  <!-- ======================================================== -->
+  <!-- 10. ACADEMIC FOOTER                                      -->
+  <!-- ======================================================== -->
+  <footer class="portal-footer">
+    <div class="footer-inner">
+      <div>
+        <strong>Department of Computer Science & Engineering</strong> • Academic Affairs Council<br>
+        <span style="font-size:0.75rem;">Interactive Frontend Demonstration • Prototype Mode Active</span>
+      </div>
+      <div style="font-size:0.75rem; color:#64748b;">
+        Final implementation planned in Python Flask &amp; SQLite.
+      </div>
+    </div>
+  </footer>
+
+  <!-- Scripts -->
+  <script src="data.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
